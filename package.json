@@ -1,0 +1,13 @@
+{
+  "name": "pianoroll-abc",
+  "version": "1.0.0",
+  "description": "A piano-roll editor for ABC notation scores. Drag notes on a grid, hear them play, get valid ABC back. No dependencies.",
+  "main": "pianoroll.js",
+  "files": ["pianoroll.js", "pianoroll.css", "README.md", "LICENSE"],
+  "scripts": { "test": "node test/test.js" },
+  "keywords": ["abc-notation", "piano-roll", "music", "melody", "editor",
+               "songwriting", "lyrics", "syllables", "web-audio"],
+  "license": "MIT",
+  "repository": { "type": "git", "url": "git+https://github.com/siliconsense/pianoroll.js.git" },
+  "homepage": "https://github.com/siliconsense/pianoroll.js#readme"
+}

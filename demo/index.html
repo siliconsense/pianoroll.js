@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>pianoroll.js — demo</title>
+<link rel="stylesheet" href="../pianoroll.css">
+<style>
+  /* The editor reads --accent, --line, --smoke and friends from whatever is in
+     scope, so a theme is just a set of variables. Three are wired up below. */
+  :root{
+    --deep:#193549; --concrete:#122738; --ash:#1f4662; --smoke:#234e6b;
+    --line:#1f4662; --line2:#2d5a78; --snow:#ffffff; --silver:#aec5d6;
+    --muted:#6b8aa2; --accent:#ffc600; --accent-dim:rgba(255,198,0,.14);
+    --on-accent:#0d2130; --bot:#fb94ff;
+    --bg:var(--deep); --panel:var(--concrete); --text:var(--snow); --dim:var(--silver);
+    --mono:ui-monospace,'JetBrains Mono',Menlo,Consolas,monospace;
+  }
+  :root[data-theme="obsidian"]{
+    --deep:#0a0c10; --concrete:#10131a; --ash:#161a22; --smoke:#232834;
+    --line:#222733; --line2:#2e3442; --snow:#e8ecf2; --silver:#8a93a3;
+    --muted:#5b6472; --accent:#5ad1ff; --accent-dim:rgba(90,209,255,.12);
+    --on-accent:#061018; --bot:#c78cff;
+  }
+  :root[data-theme="vinyl"]{
+    --deep:#141110; --concrete:#1a1614; --ash:#221c19; --smoke:#2f2723;
+    --line:#2a2320; --line2:#3a302b; --snow:#f3ebe0; --silver:#a08f80;
+    --muted:#6a5d52; --accent:#f2a93b; --accent-dim:rgba(242,169,59,.14);
+    --on-accent:#1a1208; --bot:#f28482;
+  }
+  body{margin:0;background:var(--bg);color:var(--text);
+       font:15px/1.6 ui-sans-serif,system-ui,-apple-system,'Segoe UI',Roboto,sans-serif}
+  .wrap{max-width:1100px;margin:0 auto;padding:28px 16px 64px}
+  h1{font-size:clamp(22px,4vw,30px);margin:0 0 4px;letter-spacing:-.01em}
+  .sub{color:var(--dim);margin:0 0 22px}
+  .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin:0 0 14px}
+  button,select{background:var(--panel);color:var(--text);border:1px solid var(--line);
+    border-radius:6px;padding:7px 12px;font:inherit;font-size:13px;cursor:pointer}
+  button:hover{border-color:var(--accent)}
+  .editor{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px}
+  h2{font-size:15px;margin:26px 0 8px;color:var(--dim);font-weight:600;
+     text-transform:uppercase;letter-spacing:.12em}
+  textarea{width:100%;box-sizing:border-box;min-height:150px;background:var(--panel);
+    color:var(--text);border:1px solid var(--line);border-radius:8px;padding:10px;
+    font:12.5px/1.55 var(--mono);resize:vertical}
+  .note{color:var(--dim);font-size:13px;margin:8px 0 0}
+  code{font-family:var(--mono);font-size:.92em;color:var(--accent)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>pianoroll.js</h1>
+  <p class="sub">Edit an ABC score on a grid. No dependencies, no build step, nothing downloaded.</p>
+
+  <div class="row">
+    <button id="lang">Русский интерфейс</button>
+    <select id="theme" title="the editor takes its colours from CSS variables">
+      <option value="cobalt">Cobalt2 — blue and yellow</option>
+      <option value="obsidian">Obsidian — graphite and ice</option>
+      <option value="vinyl">Vinyl — warm amber</option>
+    </select>
+    <button id="fit">Fit melody to the lyrics</button>
+    <button id="reload">Reset the score</button>
+  </div>
+
+  <div class="editor"><div id="roll"></div></div>
+
+  <h2>Lyrics</h2>
+  <textarea id="lyrics" style="min-height:90px">[Verse]
+Every night I hear the rain
+Falling on an empty train</textarea>
+  <p class="note">Press <b>Fit melody to the lyrics</b> and the vocal line is reshaped so that the
+  number of notes matches the number of syllables — surplus notes merge, long ones split,
+  and the contour survives.</p>
+
+  <h2>ABC — this is the score, kept in sync</h2>
+  <textarea id="abc" readonly></textarea>
+  <p class="note">Parsing and rebuilding is lossless: <code>PR.build(PR.parse(abc))</code>
+  round-trips real model output without dropping ties, accidentals or chord marks.</p>
+</div>
+
+<script src="../pianoroll.js"></script>
+<script>
+const SCORE = `X:1
+T:Demo
+M:4/4
+L:1/32
+Q:1/4=96
+V: Vocal clef=treble name="Vocal Melody" snm="Vocal"
+V: Ins clef=treble name="Ins Melody" snm="Inst."
+K:Am
+% verse
+V: Vocal
+"Am"A,8B,8C8D8|"F"E16D16|"C"C8B,8A,16|"G"z32|
+V: Ins
+"Am"A,,16E,,16|"F"F,,16C,,16|"C"C,,16G,,16|"G"G,,16D,,16|
+`;
+
+const host = document.getElementById('roll');
+const out  = document.getElementById('abc');
+let state, api;
+
+function show(){ out.value = PR.build(state); }
+
+function mount(abc){
+  state = PR.parse(abc);
+  api = PR.mount(host, state, show);   // onChange fires after every edit
+  show();
+}
+mount(SCORE);
+
+document.getElementById('reload').onclick = () => { api && api.stop(); mount(SCORE); };
+
+document.getElementById('lang').onclick = e => {
+  PR.config.locale = PR.config.locale === 'en' ? 'ru' : 'en';
+  e.target.textContent = PR.config.locale === 'en' ? 'Русский интерфейс' : 'English interface';
+  const abc = PR.build(state);
+  api && api.stop();
+  mount(abc);                            // re-mount so the toolbar picks up the new language
+};
+
+document.getElementById('theme').onchange = e => {
+  // Cobalt2 is the default palette, so it needs no attribute of its own.
+  if (e.target.value === 'cobalt') document.documentElement.removeAttribute('data-theme');
+  else document.documentElement.setAttribute('data-theme', e.target.value);
+};
+
+document.getElementById('fit').onclick = () => {
+  const r = PR.fitToLyrics(state, document.getElementById('lyrics').value, 'Vocal');
+  if (!r.ok) { alert(r.error); return; }
+  api.redraw(); show();
+  alert(`Notes: ${r.before} → ${r.after}\nSyllables: ${r.syllables}\nPhrases changed: ${r.touched} of ${r.phrases}`);
+};
+</script>
+</body>
+</html>
