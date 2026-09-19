@@ -148,9 +148,9 @@ Requires a modern browser (Web Audio, CSS grid, ES2020). No IE, no polyfills.
 
 ## Where it comes from
 
-Built for the songwriting studio at [grznt.club](https://grznt.club/studio/) and used in
-production there, by [SiliconSense](https://siliconsense.club) — a catalogue of style
-references and audio tools for people who write songs.
+Built for our own songwriting studio and used in production there, by
+[SiliconSense](https://siliconsense.club) — a catalogue of style references and audio
+tools for people who write songs.
 
 ## Licence
 
